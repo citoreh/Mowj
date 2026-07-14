@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mowj Rooms — Listen together, perfectly in sync</title>
+<meta name="description" content="A Chrome extension for listening to YouTube Music in sync with friends. No audio streaming — each browser plays, Mowj keeps everyone on the same beat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Vazirmatn:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --abyss: #0A161C;
+    --panel: #0E1B22;
+    --line: #22414A;
+    --seafoam: #7FD8C3;
+    --foam-dim: #4D8F7F;
+    --mist: #DFEEEA;
+    --slate: #7F9A96;
+    --deep-ink: #06231E;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--abyss);
+    color: var(--mist);
+    font-family: "Vazirmatn", system-ui, sans-serif;
+    font-weight: 300;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--seafoam); color: var(--deep-ink); }
+
+  a { color: var(--seafoam); }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--seafoam); outline-offset: 3px; border-radius: 4px;
+  }
+
+  .shell { max-width: 1060px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
+
+  /* ── wave field ─────────────────────────────────────────── */
+  #sea {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 46vh; z-index: 0; pointer-events: none;
+  }
+  .depth {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(10,22,28,0) 40%, rgba(10,22,28,.72) 78%, rgba(10,22,28,.92) 100%);
+  }
+
+  /* ── header ─────────────────────────────────────────────── */
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 34px 0 0;
+  }
+  .wordmark {
+    font-family: "Instrument Serif", serif; font-size: 1.5rem; letter-spacing: .02em;
+    color: var(--mist); text-decoration: none;
+  }
+  .wordmark .fa { color: var(--seafoam); font-size: 1.35rem; margin-inline-start: .35rem; }
+  nav a {
+    font-size: .85rem; color: var(--slate); text-decoration: none;
+    margin-inline-start: 26px; letter-spacing: .04em;
+  }
+  nav a:hover { color: var(--seafoam); }
+
+  /* ── hero ───────────────────────────────────────────────── */
+  .hero {
+    display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px;
+    align-items: center; padding: 96px 0 120px; min-height: 74vh;
+  }
+  .eyebrow {
+    font-size: .78rem; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--foam-dim); margin-bottom: 22px;
+  }
+  h1 {
+    font-family: "Instrument Serif", serif; font-weight: 400;
+    font-size: clamp(2.6rem, 5.4vw, 4.1rem); line-height: 1.08;
+    letter-spacing: .005em; margin-bottom: 24px;
+  }
+  h1 em { font-style: italic; color: var(--seafoam); }
+  .lede { max-width: 46ch; color: var(--slate); font-size: 1.06rem; margin-bottom: 36px; }
+  .lede strong { color: var(--mist); font-weight: 500; }
+
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-block; text-decoration: none; font-size: .95rem;
+    padding: 13px 26px; border-radius: 10px; letter-spacing: .01em;
+    transition: transform .15s ease, background .15s ease;
+  }
+  .btn-primary { background: var(--seafoam); color: var(--deep-ink); font-weight: 600; }
+  .btn-primary:hover { background: #93E2CF; transform: translateY(-1px); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--mist); }
+  .btn-ghost:hover { border-color: var(--foam-dim); }
+  .fa-tag { font-size: .92rem; color: var(--foam-dim); margin-top: 20px; }
+
+  /* ── room card (hero visual) ────────────────────────────── */
+  .room-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px 24px; box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    max-width: 330px; justify-self: end; width: 100%;
+  }
+  .room-card h2 {
+    font-family: "Instrument Serif", serif; font-weight: 400;
+    font-size: 1.05rem; color: var(--seafoam); letter-spacing: .03em;
+  }
+  .room-card .sub { font-size: .78rem; color: var(--slate); margin-bottom: 16px; }
+  .code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 1.5rem; letter-spacing: .38em; text-align: center; text-indent: .38em;
+    color: var(--seafoam); background: #09141A; border: 1px dashed var(--line);
+    border-radius: 10px; padding: 12px 8px; margin-bottom: 16px; user-select: all;
+  }
+  .member { display: flex; align-items: center; gap: 9px; font-size: .88rem; padding: 5px 0; color: #C9DCD7; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--foam-dim); flex: none; }
+  .dot.live { background: var(--seafoam); }
+  .badge {
+    font-size: .62rem; font-weight: 600; letter-spacing: .06em;
+    background: var(--seafoam); color: var(--deep-ink); border-radius: 4px; padding: 1px 6px;
+  }
+  .sync-line { margin-top: 14px; font-size: .78rem; color: var(--foam-dim); display: flex; gap: 8px; align-items: center; }
+  .sync-line .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--seafoam); animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+
+  /* ── invite mode ────────────────────────────────────────── */
+  .invite-steps { margin-top: 8px; }
+  .invite-steps .step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+  .invite-steps .n {
+    font-family: ui-monospace, monospace; color: var(--seafoam);
+    border: 1px solid var(--line); border-radius: 50%;
+    width: 26px; height: 26px; flex: none; display: grid; place-items: center; font-size: .8rem;
+    margin-top: 3px;
+  }
+  .hidden { display: none !important; }
+
+  /* ── how it works ───────────────────────────────────────── */
+  section.how { padding: 40px 0 90px; }
+  .how h2, .quiet h2 {
+    font-family: "Instrument Serif", serif; font-weight: 400;
+    font-size: 1.9rem; margin-bottom: 42px;
+  }
+  .how h2 em { font-style: italic; color: var(--seafoam); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; }
+  .step-card { border-top: 1px solid var(--line); padding-top: 20px; }
+  .step-card .k {
+    font-family: ui-monospace, monospace; font-size: .78rem; color: var(--foam-dim);
+    letter-spacing: .12em; display: block; margin-bottom: 10px;
+  }
+  .step-card h3 { font-weight: 500; font-size: 1.02rem; margin-bottom: 8px; color: var(--mist); }
+  .step-card p { font-size: .92rem; color: var(--slate); }
+
+  /* ── privacy strip ──────────────────────────────────────── */
+  section.quiet { padding: 30px 0 110px; }
+  .quiet-box {
+    border: 1px solid var(--line); border-radius: 16px; background: rgba(14,27,34,.6);
+    padding: 34px 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+    backdrop-filter: blur(4px);
+  }
+  .quiet-box h2 { font-size: 1.45rem; margin-bottom: 12px; }
+  .quiet-box p { font-size: .93rem; color: var(--slate); }
+  .quiet-box p + p { margin-top: 12px; }
+  .quiet-box strong { color: var(--mist); font-weight: 500; }
+
+  footer {
+    padding: 0 0 44px; display: flex; justify-content: space-between; align-items: baseline;
+    font-size: .82rem; color: var(--foam-dim); flex-wrap: wrap; gap: 12px;
+  }
+  footer a { color: var(--slate); text-decoration: none; margin-inline-end: 20px; }
+  footer a:hover { color: var(--seafoam); }
+  footer .fa { color: var(--foam-dim); }
+
+  @media (max-width: 840px) {
+    .hero { grid-template-columns: 1fr; padding: 64px 0 80px; min-height: unset; gap: 44px; }
+    .room-card { justify-self: start; }
+    .steps { grid-template-columns: 1fr; }
+    .quiet-box { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sync-line .pulse { animation: none; opacity: 1; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="sea" aria-hidden="true"></canvas>
+<div class="depth" aria-hidden="true"></div>
+
+<div class="shell">
+  <header>
+    <a class="wordmark" href="./">Mowj Rooms<span class="fa">موج</span></a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="https://github.com/YOUR_GITHUB/mowj-rooms">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- ── default hero ── -->
+  <section class="hero" id="hero-default">
+    <div>
+      <p class="eyebrow">A Chrome extension for YouTube Music</p>
+      <h1>Listen <em>together,</em><br>perfectly in sync.</h1>
+      <p class="lede">Start a room, share a six-letter code, and every play, pause,
+        and skip lands on your friends' speakers at the same moment.
+        <strong>No audio is streamed</strong> — each browser plays YouTube Music on its
+        own, and Mowj keeps them on the same beat.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="STORE_URL_HERE" id="install-btn">Add to Chrome</a>
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+      <p class="fa-tag" lang="fa" dir="rtl">با هم گوش کنیم</p>
+    </div>
+
+    <div class="room-card" aria-label="Example of an open listening room">
+      <h2>Mowj Rooms</h2>
+      <p class="sub">You are hosting — your play, pause, and skips lead the room.</p>
+      <div class="code">NYXVJD</div>
+      <div class="member"><span class="dot live"></span> Setareh (you) <span class="badge">HOST</span></div>
+      <div class="member"><span class="dot"></span> Ava</div>
+      <div class="member"><span class="dot"></span> Kian</div>
+      <div class="sync-line"><span class="pulse"></span> in sync</div>
+    </div>
+  </section>
+
+  <!-- ── invite hero (shown when ?room=CODE) ── -->
+  <section class="hero hidden" id="hero-invite">
+    <div>
+      <p class="eyebrow">You're invited to a listening room</p>
+      <h1>Someone wants to<br>listen <em>with you.</em></h1>
+      <div class="invite-steps">
+        <div class="step">
+          <span class="n">1</span>
+          <p>Add the Mowj Rooms extension to Chrome — it takes one click and works
+             only on YouTube Music pages.<br>
+             <a class="btn btn-primary" style="margin-top:12px" href="STORE_URL_HERE">Add to Chrome</a></p>
+        </div>
+        <div class="step">
+          <span class="n">2</span>
+          <p>Then join the room — the music starts where your friend is, right now.<br>
+             <a class="btn btn-ghost" style="margin-top:12px" id="join-btn" href="#">Join the room</a></p>
+        </div>
+      </div>
+      <p class="fa-tag" lang="fa" dir="rtl">با هم گوش کنیم</p>
+    </div>
+
+    <div class="room-card">
+      <h2>Your room code</h2>
+      <p class="sub">Already have the extension? Click join, or enter this code in the wave bubble on YouTube Music.</p>
+      <div class="code" id="invite-code">——————</div>
+      <div class="sync-line"><span class="pulse"></span> the room is live</div>
+    </div>
+  </section>
+
+  <!-- ── how it works ── -->
+  <section class="how" id="how">
+    <h2>Three steps to <em>the same moment</em></h2>
+    <div class="steps">
+      <div class="step-card">
+        <span class="k">STEP 1</span>
+        <h3>Everyone installs it</h3>
+        <p>Each listener adds Mowj Rooms to Chrome. It stays dormant everywhere
+           except youtube.com and music.youtube.com.</p>
+      </div>
+      <div class="step-card">
+        <span class="k">STEP 2</span>
+        <h3>One person hosts</h3>
+        <p>Open YouTube Music, press play, click the wave bubble, and start a room.
+           Share the six-letter code or the invite link.</p>
+      </div>
+      <div class="step-card">
+        <span class="k">STEP 3</span>
+        <h3>Friends join in</h3>
+        <p>They enter the code and land exactly where the song is. Playlists carry
+           over, tracks advance together, and drift is corrected before you can hear it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── privacy ── -->
+  <section class="quiet">
+    <div class="quiet-box">
+      <div>
+        <h2>Nothing leaves your browser but the beat</h2>
+      </div>
+      <div>
+        <p>Mowj never records, streams, or uploads audio. Each browser plays YouTube
+           Music by itself; the room shares only <strong>a track ID, a position, and a
+           timestamp</strong> — a few bytes, not the music.</p>
+        <p>Rooms are anonymous by design: no account, no email, no history. When the
+           host leaves, the room is deleted. <a href="./privacy-policy.html">Read the privacy policy</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <a href="./privacy-policy.html">Privacy</a>
+      <a href="https://github.com/YOUR_GITHUB/mowj-rooms">Source</a>
+    </div>
+    <div>Mowj <span class="fa" lang="fa">موج</span> means wave.</div>
+  </footer>
+</div>
+
+<script>
+  // ── invite mode: /?room=CODE or /#room=CODE flips the hero ──
+  (function () {
+    var params = new URLSearchParams(location.search);
+    var code = params.get('room');
+    if (!code && location.hash) {
+      var m = location.hash.match(/room=([A-Za-z0-9]+)/);
+      if (m) code = m[1];
+    }
+    if (!code) return;
+    code = code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    if (code.length !== 6) return;
+    document.getElementById('hero-default').classList.add('hidden');
+    var invite = document.getElementById('hero-invite');
+    invite.classList.remove('hidden');
+    document.getElementById('invite-code').textContent = code;
+    document.getElementById('join-btn').href =
+      'https://music.youtube.com/#mowjRoom=' + code;
+    document.title = 'You\u2019re invited \u2014 Mowj Rooms';
+  })();
+
+  // ── the sea: three slow sine layers ──
+  (function () {
+    var canvas = document.getElementById('sea');
+    var ctx = canvas.getContext('2d');
+    var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W, H, t = 0;
+
+    function size() {
+      var dpr = Math.min(devicePixelRatio || 1, 2);
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    var layers = [
+      { amp: 16, len: 0.006, speed: 0.012, y: 0.42, alpha: 0.34, w: 1.6 },
+      { amp: 24, len: 0.004, speed: 0.008, y: 0.58, alpha: 0.20, w: 1.3 },
+      { amp: 34, len: 0.003, speed: 0.005, y: 0.74, alpha: 0.11, w: 1.1 }
+    ];
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < layers.length; i++) {
+        var L = layers[i];
+        ctx.beginPath();
+        for (var x = 0; x <= W; x += 3) {
+          var y = H * L.y
+            + Math.sin(x * L.len + t * L.speed * 60) * L.amp
+            + Math.sin(x * L.len * 2.7 + t * L.speed * 34) * L.amp * 0.35;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(127, 216, 195, ' + L.alpha + ')';
+        ctx.lineWidth = L.w;
+        ctx.stroke();
+      }
+      t += 0.016;
+    }
+
+    function loop() { draw(); requestAnimationFrame(loop); }
+    addEventListener('resize', function () { size(); if (reduced) draw(); });
+    size();
+    if (reduced) { draw(); } else { loop(); }
+  })();
+</script>
+</body>
+</html>
